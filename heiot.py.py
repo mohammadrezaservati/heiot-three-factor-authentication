@@ -135,7 +135,6 @@ def load_gwn_keys():
 # ============================================================
 
 def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
-    # ✅ normalize inputs
     ID_i  = (ID_i or "").strip()
     PW_i  = (PW_i or "").strip()
     Bio_i = (Bio_i or "").strip()
@@ -156,7 +155,7 @@ def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
     r_i = rand_hex(16)
     R, P = Gen(Bio_i)
 
-    # ✅ IMPORTANT: use a consistent 32-byte representation for a_i in ALL computations
+    #  IMPORTANT: use a consistent 32-byte representation for a_i in ALL computations
     a_i_32 = a_i.rjust(64, "0")  # 64-hex
 
     RID_i = H("RID", a_i_32 + "||" + PW_i + "||" + R)
@@ -182,7 +181,6 @@ def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
     c.execute("INSERT INTO gwn_users (hid, rk, fi, pk_gwn) VALUES (?,?,?,?)",
               (HID_i, r_k, F_i, pk_gwn))
 
-    # ✅ FIX: XOR must use same-length numbers; pad a_i on the LEFT (rjust), not ljust
     B_i = H("BiMask", ID_i + "||" + R_i)
     B_i_int = hex_to_int(B_i) ^ hex_to_int(a_i_32)
     B_i_hex = int_to_hex(B_i_int)
@@ -267,7 +265,7 @@ def load_device(SID_j: str):
     return {"SID": row[0], "KGS": row[1]}
 
 def user_login(ID_i: str, PW_i: str, Bio_i: str) -> (bool, dict, str):
-    # ✅ normalize inputs
+
     ID_i  = (ID_i or "").strip()
     PW_i  = (PW_i or "").strip()
     Bio_i = (Bio_i or "").strip()
@@ -312,7 +310,7 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     init_db()
     sk_gwn, pk_gwn = load_gwn_keys()
 
-    # ✅ normalize inputs
+    # 
     ID_i  = (ID_i or "").strip()
     PW_i  = (PW_i or "").strip()
     Bio_i = (Bio_i or "").strip()
@@ -444,8 +442,8 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     H1_u = H("H1", SK_u + "||" + T3_u)
     V5_u = H("V5", H1_u + "||" + T4 + "||" + DID_new_u + "||" + m1_obj["V2"])
 
-# === LAB MODE: Skip V5 verification ===
-# NOTE: V5 check is intentionally bypassed for experimental demonstration
+
+
 # if V5_u != V5:
 #     return False, "Authentication failed (V5 mismatch at user).", None
 
@@ -757,3 +755,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = HEIoT_GUI(root)
     root.mainloop()
+
