@@ -103,6 +103,7 @@ role U{
     claim_U(U,Secret,oi);
     claim_U(U,Secret,PKgwn);
     claim_U(U,Secret,SKijp);
+    claim_U (U, Nisynch);
     claim_U(U,Alive);
     claim_U(U,Weakagree);
 }
@@ -166,6 +167,7 @@ role GWN{
 
     claim_GWN(GWN,Secret,KUGp);
     claim_GWN(GWN,Secret,KGS);
+    claim_GWN (GWN, Nisynch);
     claim_GWN(GWN,Alive);
     claim_GWN(GWN,Weakagree);
 }
@@ -207,6 +209,8 @@ role SD{
     claim_SD(SD,Secret,SIDj);
     claim_SD(SD,Secret,KGS);
     claim_SD(SD,Secret,SKij);
+    claim_SD(SD, Nisynch);
     claim_SD(SD,Alive);
+    claim_SD(SD,Weakagree);
 }
 }
