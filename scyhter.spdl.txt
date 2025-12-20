@@ -1,0 +1,212 @@
+hashfunction H;
+hashfunction H1;
+hashfunction H2;
+hashfunction H3;
+hashfunction H4;
+
+const Df : Function; 
+const Dm:  Function; 
+const De:  Function;  
+
+const fst : Function; 
+const mst:  Function; 
+const est:  Function; 
+
+const xor  : Function;
+const con  : Function;
+const ECC  : Function;
+const E    : Function;
+const plus : Function;
+
+
+const P;
+
+usertype Timestamp;
+usertype Nonce;
+
+usertype Timestamp;
+usertype Ticket;
+protocol @oracle (X)
+{ 
+role X {
+    var Y:Agent;
+    const P;
+    recv_!X1(X, X, ECC(X,ECC(Y,P)));
+    send_!X2( X,X , ECC(Y,ECC(X,P)) );
+       }
+}
+protocol HEIoTAuth(U,GWN,SD){
+
+    secret IDi;
+    secret PWi;
+    secret URi;
+    secret Bi;
+    secret SIDj;
+    secret Ji;
+    secret PKgwn;
+    secret R; 
+    secret SKgwn;
+    secret KGS;
+    secret HIDi;
+    secret Fi;
+    const DIDi;
+
+role U{
+
+
+    var ak : Nonce;
+
+    fresh T1 : Timestamp;
+    fresh oi : Nonce;
+    var T2: Timestamp;
+    var T3: Timestamp;
+    var T4: Timestamp;
+
+
+    macro ai = xor(Bi,H(con(IDi,R)));
+
+    macro ri = xor(H1(con(PWi,R)),URi);
+
+    macro Ri = xor(H1(con(PWi,R)),URi);
+
+    macro HIDcalc = H(con(IDi,ri));
+
+    macro Ai = ECC(H(con(PWi,con(ri,oi))),P);
+
+    macro KUG = ECC(ai,Ji);
+
+    macro V2 = H(con(HIDcalc,con(KUG,con(Ai,con(PKgwn,con(Ri,T1))))));
+
+    macro M1 = xor(con(SIDj,con(Ri,con(V2,Ai))),H2(con(KUG,con(T1,HIDcalc))));
+
+    send_1(U,GWN,M1,DIDi,T1);
+
+    var M4;
+    var V5;
+    var T4;
+    var T3;
+
+
+    recv_4(GWN,U,M4,V5,T4);
+
+    macro DIDinewp = xor(M4,H4(con(V2,con(Ri,HIDcalc))));
+    macro Bsp      = xor(M4,H4(con(V2,con(Ri,HIDcalc))));
+    macro T3p      = xor(M4,H4(con(V2,con(Ri,HIDcalc))));
+
+    macro SKijp = H(ECC(xor(H(con(PWi,con(ri,oi)),H(con(IDi,ri))),Bsp)));
+
+    macro V5p = H(con(H1(con(SKijp,T3p)),con(T4,con(DIDinewp,V2))));
+    match(V5p,V5);
+
+
+    claim_U(U,Secret,IDi);
+    claim_U(U,Secret,oi);
+    claim_U(U,Secret,PKgwn);
+    claim_U(U,Secret,SKijp);
+    claim_U(U,Alive);
+    claim_U(U,Weakagree);
+}
+
+role GWN{
+
+    var oi : Nonce;
+
+    var T1: Timestamp;
+    fresh T2 : Timestamp;
+    var T3: Timestamp;
+    fresh T4    : Timestamp;
+
+    fresh ak : Nonce;
+    fresh rknew : Nonce;
+
+    var M1;
+
+    recv_1(U,GWN,M1,DIDi,T1);
+
+    macro HIDp    = Df(SKgwn,DIDi);
+    macro rkp     = Dm(SKgwn,DIDi);
+    macro Fip     = Dm(SKgwn,DIDi);
+    macro PKgwnp  = De(SKgwn,DIDi);
+
+    macro KUGp = ECC(rkp,Fip);
+
+    macro SIDjp = xor(M1,H2(con(KUGp,con(T1,HIDp))));
+    macro Rip   = xor(M1,H2(con(KUGp,con(T1,HIDp))));
+    macro V2p   = xor(M1,H2(con(KUGp,con(T1,HIDp))));
+    macro Aip   = xor(M1,H2(con(KUGp,con(T1,HIDp))));
+
+    /* -------- verify V2 -------- */
+    macro V2pp = H(con(HIDp,con(KUGp,con(Aip,con(PKgwn,con(Rip,T1))))));
+    match(V2pp,V2p);
+
+
+    macro V3 = H(con(SIDjp,con(ak,con(Aip,con(KGS,T2)))));
+    macro M2 = xor(con(Aip,con(Rip,con(ak,V2p))),H3(con(KGS,con(T2,SIDjp))));
+
+    send_2(GWN,SD,M2,V3,T2);
+
+
+    var M3;
+    var V4;
+
+    recv_3(SD,GWN,M3,V4,T3);
+
+    macro H1SKT3  = fst(xor(M3,KGS));
+    macro Bsp     = est(xor(M3,KGS));
+
+    macro V4p = H(con(H1SKT3,con(KGS,con(SIDjp,con(Bsp,T3)))));
+    match(V4p,V4);
+
+
+    macro DIDinew = E(SKgwn,con(HIDp,con(rknew,con(Fip,PKgwn))));
+    macro M4 = xor(con(DIDinew,con(Bsp,T3)),H4(con(V2p,con(Rip,HIDp))));
+    macro V5 = H(con(H1SKT3,con(T4,con(DIDinew,V2p))));
+
+    send_4(GWN,U,M4,V5,T4);
+
+    claim_GWN(GWN,Secret,KUGp);
+    claim_GWN(GWN,Secret,KGS);
+    claim_GWN(GWN,Alive);
+    claim_GWN(GWN,Weakagree);
+}
+
+role SD{
+ 
+    var ak : Nonce;
+    var oi : Nonce;
+
+    fresh bs : Nonce;
+    fresh T3 : Timestamp;
+    var T1: Timestamp;
+    var T2 : Timestamp;
+    var T3: Timestamp;
+
+    macro Aip = fst(xor(M2,H3(con(KGS,con(T2,SIDj)))));
+    macro Rip = mst(xor(M2,H3(con(KGS,con(T2,SIDj)))));
+    macro akp = mst(xor(M2,H3(con(KGS,con(T2,SIDj)))));
+    macro V2p = est(xor(M2,H3(con(KGS,con(T2,SIDj)))));
+
+    macro V3p = H(con(SIDj,con(akp,con(Aip,con(KGS,T2)))));
+
+    macro Bs = ECC(H(con(KGS,con(bs,SIDj))),P);
+
+    macro SKij = H(con(H(con(KGS,con(bs,SIDj))),plus(Aip,Rip)));
+
+    macro M3 = xor(con(H1(con(SKij,T3)),Bs),KGS);
+
+    macro V4 = H(con(H1(con(SKij,T3)),con(KGS,con(SIDj,con(Bs,T3)))));
+
+
+    var M2;
+    var V3;
+    recv_2(GWN,SD,M2,V3,T2);
+    match(V3p,V3);
+
+    send_3(SD,GWN,M3,V4,T3);
+
+    claim_SD(SD,Secret,SIDj);
+    claim_SD(SD,Secret,KGS);
+    claim_SD(SD,Secret,SKij);
+    claim_SD(SD,Alive);
+}
+}
