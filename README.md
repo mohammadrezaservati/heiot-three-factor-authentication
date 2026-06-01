@@ -153,5 +153,3 @@ This repository is provided for academic and research purposes.
 ## Citation
 
 If you use this repository in your research, please cite the corresponding HEIoT paper.
-
-این متن را مستقیم داخل `README.md` گیت‌هاب کپی کن؛ فرمت آن Markdown استاندارد GitHub است.
