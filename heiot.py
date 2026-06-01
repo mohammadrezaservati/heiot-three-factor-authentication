@@ -449,7 +449,6 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     init_db()
     sk_gwn, pk_gwn = load_gwn_keys()
 
-    # ✅ normalize inputs
     ID_i = (ID_i or "").strip()
     PW_i = (PW_i or "").strip()
     Bio_i = (Bio_i or "").strip()
@@ -529,7 +528,6 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
         + T1,
     )
 
-    # ⬅️ این خط و بعدش باید تورفتگی داشته باشند
     if V2_chk != m1_obj["V2"]:
         return False, "Authentication failed (V2 integrity mismatch).", None
 
