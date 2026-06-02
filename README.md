@@ -131,7 +131,7 @@ The results demonstrate that the proposed HEIoT protocol achieves efficient exec
 
 ## Formal Verification
 
-The file `scyther.spdl.txt` contains the formal Scyther specification of the proposed protocol.
+The file `scyther.spdl` contains the formal Scyther specification of the proposed protocol.
 
 Example command:
 
@@ -142,7 +142,7 @@ scyther-linux scyther.spdl
 or
 
 ```bash
-scyther-win.exe scyther.spdl.txt
+scyther-win.exe scyther.spdl
 ```
 
 depending on the operating system.
