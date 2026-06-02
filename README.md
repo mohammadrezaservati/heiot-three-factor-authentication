@@ -136,7 +136,7 @@ The file `scyther.spdl.txt` contains the formal Scyther specification of the pro
 Example command:
 
 ```bash
-scyther-linux scyther.spdl.txt
+scyther-linux scyther.spdl
 ```
 
 or
