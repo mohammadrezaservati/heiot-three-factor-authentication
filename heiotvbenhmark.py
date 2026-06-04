@@ -11,13 +11,6 @@ G_CONST = 7  # demo generator constant (any non-zero small int is fine)
 # Low-level helpers (hash / xor / enc-dec / packing)
 # ============================================================
 
-import hashlib
-
-
-# ============================================================
-# Low-level helpers (hash / xor / enc-dec / packing)
-# ============================================================
-
 def h(*parts):
     msg = "||".join(parts).encode("utf-8")
     return hashlib.shake_256(msg).hexdigest(20)   # 160 bits
