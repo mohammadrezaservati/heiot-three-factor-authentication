@@ -14,24 +14,28 @@ G_CONST = 7  # demo generator constant (any non-zero small int is fine)
 import hashlib
 
 
+# ============================================================
+# Low-level helpers (hash / xor / enc-dec / packing)
+# ============================================================
+
 def h(*parts):
     msg = "||".join(parts).encode("utf-8")
-    return hashlib.shake_256(msg).hexdigest(20)  # 160 bits
+    return hashlib.shake_256(msg).hexdigest(20)   # 160 bits
 
 
 def H1(*parts):
     msg = "||".join(parts).encode("utf-8")
-    return hashlib.shake_256(msg).hexdigest(40)  # 320 bits
+    return hashlib.shake_256(msg).hexdigest(60)   # 480 bits
 
 
 def H2(*parts):
     msg = "||".join(parts).encode("utf-8")
-    return hashlib.shake_256(msg).hexdigest(120)  # 960 bits
+    return hashlib.shake_256(msg).hexdigest(116)  # 928 bits
 
 
 def H3(*parts):
     msg = "||".join(parts).encode("utf-8")
-    return hashlib.shake_256(msg).hexdigest(60)  # 480 bits
+    return hashlib.shake_256(msg).hexdigest(120)  # 960 bits
 
 
 def H4(*parts):
@@ -44,8 +48,7 @@ def hex_to_int(x: str) -> int:
 
 
 def int_to_hex(x: int) -> str:
-    # always 32 bytes hex
-    return f"{x:064x}"
+    return f"{x:080x}"
 
 
 # Large prime modulus (just for consistent arithmetic demo)
@@ -150,8 +153,8 @@ def init_db():
     c.execute("SELECT sk_gwn, pk_gwn FROM gwn WHERE id=1")
     row = c.fetchone()
     if not row:
-        sk = rand_hex(16)
-        pk = H1("PK", sk)
+        sk = rand_hex(20)
+        pk = int_to_hex((hex_to_int(sk) * G_CONST) % P_MOD)
         c.execute("INSERT INTO gwn (id, sk_gwn, pk_gwn) VALUES (1, ?, ?)", (sk, pk))
     conn.commit()
     conn.close()
@@ -191,12 +194,12 @@ def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
     # ==================================================
     # User Side
     # ==================================================
-    a_i = rand_hex(16)  # 128-bit
-    r_i = rand_hex(16)  # 128-bit
+    a_i = rand_hex(20)  # 160-bit
+    r_i = rand_hex(20)  # 160-bit
 
     R, P = Gen(Bio_i)
 
-    a_i_32 = a_i.rjust(64, "0")
+    a_i_32 = a_i
 
     # RID_i = h(a_i || PW_i || R)
     RID_i = h("RID", a_i_32 + "||" + PW_i + "||" + R)
@@ -207,10 +210,10 @@ def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
     # R_i = HID_i . G
     hid_scalar = hex_to_int(h("hIDscalar", ID_i + "||" + r_i)) % P_MOD
 
-    R_i = int_to_hex((hid_scalar * G_CONST) % P_MOD).rjust(64, "0")
+    R_i = int_to_hex((hid_scalar * G_CONST) % P_MOD)
 
     # F_i = a_i . G
-    F_i = int_to_hex((hex_to_int(a_i) * G_CONST) % P_MOD).rjust(64, "0")
+    F_i = int_to_hex((hex_to_int(a_i) * G_CONST) % P_MOD)
 
     # ==================================================
     # Gateway Side
@@ -221,10 +224,10 @@ def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
         conn.close()
         raise ValueError("HID already registered.")
 
-    r_k = rand_hex(16)
+    r_k = rand_hex(20)
 
     # J_i = r_k . G
-    J_i = int_to_hex((hex_to_int(r_k) * G_CONST) % P_MOD).rjust(64, "0")
+    J_i = int_to_hex((hex_to_int(r_k) * G_CONST) % P_MOD)
 
     # DID_i = Enc_sk(HID_i || r_k || F_i || PK_gwn)
     did_payload = {"HID": HID_i, "rk": r_k, "Fi": F_i, "PK": pk_gwn}
@@ -258,7 +261,7 @@ def register_user(ID_i: str, PW_i: str, Bio_i: str) -> dict:
 
     h1_bytes = bytes.fromhex(H1_pwR)
 
-    ur_bytes = xor_bytes(ri_Ri_bytes[:40], h1_bytes)
+    ur_bytes = xor_bytes(ri_Ri_bytes, h1_bytes)
 
     UR_i_hex = ur_bytes.hex()
 
@@ -323,14 +326,14 @@ def register_device(SID_j: str) -> str:
         conn.close()
         raise ValueError("Device already exists.")
 
-    # 128-bit random numbers
-    r_sd = rand_hex(16)
-    r_gw = rand_hex(16)
+    # 160-bit random numbers
+    r_sd = rand_hex(20)
+    r_gw = rand_hex(20)
 
     # Shared key KGS
     kgs_int = (hex_to_int(r_sd) * hex_to_int(r_gw)) % P_MOD
 
-    KGS = int_to_hex(kgs_int).rjust(64, "0")
+    KGS = int_to_hex(kgs_int)
 
     c.execute("INSERT INTO devices (sid, kgs) VALUES (?,?)", (SID_j, KGS))
 
@@ -403,7 +406,7 @@ def user_login(ID_i: str, PW_i: str, Bio_i: str):
 
     a_i_int = hex_to_int(U["B_i"]) ^ hex_to_int(mask)
 
-    a_i_32 = int_to_hex(a_i_int).rjust(64, "0")
+    a_i_32 = f"{a_i_int:040x}"
 
     # RID_i = h(a_i || PW_i || R)
 
@@ -428,9 +431,9 @@ def user_login(ID_i: str, PW_i: str, Bio_i: str):
 
     # same split used in registration
 
-    r_i = ri_Ri[:32]
+    r_i = ri_Ri[:40]
 
-    R_i = ri_Ri[32:]
+    R_i = ri_Ri[40:]
 
     # HID_i = h(ID_i || r_i)
 
@@ -453,7 +456,7 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     init_db()
     sk_gwn, pk_gwn = load_gwn_keys()
 
-
+    # ✅ normalize inputs
     ID_i = (ID_i or "").strip()
     PW_i = (PW_i or "").strip()
     Bio_i = (Bio_i or "").strip()
@@ -473,8 +476,8 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     KGS = D["KGS"]
 
     # ---------- User generates M1 ----------
-    o_i = rand_hex(16)
-    T1 = f"{time.time():.6f}"
+    o_i = rand_hex(20)
+    T1 = str(int(time.time()))
 
     Fi_int = hex_to_int(U["F_i"])
     Ji_int = hex_to_int(U["J_i"])
@@ -505,13 +508,14 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     Fi_g = did_obj["Fi"]
     PK_g = did_obj["PK"]
 
-    Ji_g = int_to_hex((hex_to_int(rk_g) * G_CONST) % P_MOD).rjust(64, "0")
+    Ji_g = int_to_hex((hex_to_int(rk_g) * G_CONST) % P_MOD)
 
     kug_int_g = (hex_to_int(Fi_g) * hex_to_int(Ji_g)) % P_MOD
 
     KUG_g = int_to_hex(kug_int_g)
 
     pad_m1_g = H2(KUG_g + "||" + T1 + "||" + HID_g)
+
 
     m1_obj = unpack_json(dec_xor("M1", pad_m1_g, M1))
 
@@ -533,12 +537,11 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
         + T1,
     )
 
-    
     if V2_chk != m1_obj["V2"]:
         return False, "Authentication failed (V2 integrity mismatch).", None
 
-    a_k = rand_hex(16)
-    T2 = f"{time.time():.6f}"
+    a_k = rand_hex(20)
+    T2 = str(int(time.time()) + 1)
 
     V3 = h("V3", SID_j + "||" + a_k + "||" + m1_obj["A1"] + "||" + KGS + "||" + T2)
 
@@ -565,13 +568,13 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     if V3_chk != V3:
         return False, "Authentication failed (V3 mismatch at device).", None
 
-    b_s = rand_hex(16)
+    b_s = rand_hex(20)
 
-    T3 = f"{time.time():.6f}"
+    T3 = str(int(time.time()) + 2)
 
     s = hex_to_int(h("s", KGS + "||" + b_s + "||" + SID_j)) % P_MOD
 
-    Bs = int_to_hex((s * G_CONST) % P_MOD).rjust(64, "0")
+    Bs = int_to_hex((s * G_CONST) % P_MOD)
 
     point_sum = (hex_to_int(m2_obj["A1"]) + hex_to_int(m2_obj["R_i"])) % P_MOD
 
@@ -599,9 +602,9 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     if V4_chk2 != V4:
         return False, "Authentication failed (V4 mismatch at gateway).", None
 
-    rk_new = rand_hex(16)
+    rk_new = rand_hex(20)
 
-    T4 = f"{time.time():.6f}"
+    T4 = str(int(time.time()) + 3)
 
     did_new_payload = {"HID": HID_g, "rk": rk_new, "Fi": Fi_g, "PK": PK_g}
 
@@ -632,6 +635,7 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     sk_u = (scalar_u * (hex_to_int(Bs_u) % P_MOD)) % P_MOD
 
     SK_u = h("SK", int_to_hex(sk_u))
+
 
     H1_u = H1(SK_u + "||" + T3_u)
 
@@ -674,31 +678,6 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
 
     return True, "Authentication completed successfully.", logs
 
-
-def benchmark_authentication(ID_i="test", PW_i="test", Bio_i="test", SID_j="test", runs=1000):
-
-    times = []
-
-    for _ in range(runs):
-
-        start = time.perf_counter()
-
-        ok, msg, logs = authenticate(ID_i, PW_i, Bio_i, SID_j)
-
-        end = time.perf_counter()
-
-        if ok:
-            times.append((end - start) * 1000)
-
-    if not times:
-        return None
-
-    return {
-        "runs": len(times),
-        "avg_ms": mean(times),
-        "min_ms": min(times),
-        "max_ms": max(times),
-    }
 
 
 # ============================================================
