@@ -449,7 +449,7 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     init_db()
     sk_gwn, pk_gwn = load_gwn_keys()
 
-    # ✅ normalize inputs
+    
     ID_i = (ID_i or "").strip()
     PW_i = (PW_i or "").strip()
     Bio_i = (Bio_i or "").strip()
@@ -633,10 +633,6 @@ def authenticate(ID_i: str, PW_i: str, Bio_i: str, SID_j: str):
     H1_u = H1(SK_u + "||" + T3_u)
 
     V5_u = h("V5", H1_u + "||" + T4 + "||" + DID_new_u + "||" + m1_obj["V2"])
-
-    # === LAB MODE: Skip V5 verification ===
-    # if V5_u != V5:
-    #     return False, "Authentication failed (V5 mismatch at user).", None
 
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
